@@ -11,13 +11,17 @@ services:
         value: /tmp/luma.sqlite
       - key: LUMA_PUBLIC_API_ONLY
         value: "1"
+      - key: LUMA_REQUIRE_TAILSCALE
+        value: "1"
       - key: LUMA_API_KEY
         sync: false
       - key: LUMA_API_ORIGINS
-        sync: false
+        value: https://smart-led.664110310060.workers.dev
       - key: OLLAMA_BASE_URL
-        sync: false
+        value: http://100.102.252.5:11434
       - key: ESP32_BASE_URL
+        value: http://192.168.1.108
+      - key: TS_AUTHKEY
         sync: false
       - key: OLLAMA_MODEL
         value: qwen3:0.6b

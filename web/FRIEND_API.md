@@ -1,12 +1,12 @@
 # Luma API สำหรับเว็บของเพื่อน
 
-เพื่อนทำเฉพาะหน้าเว็บได้เลย API อยู่ที่ Render backend ของเจ้าของโปรเจกต์ ส่วนเว็บหลักและหน้าคู่มือ `/api/` อยู่บน Cloudflare Pages ไม่ต้องเรียก Pi หรือ ESP32 โดยตรง:
+เพื่อนทำเฉพาะหน้าเว็บได้เลย API อยู่ที่ Render backend ของเจ้าของโปรเจกต์ ส่วนเว็บหลักและหน้าคู่มือ `/api/` อยู่บน Cloudflare Workers static assets ไม่ต้องเรียก Pi หรือ ESP32 โดยตรง:
 
 `BASE_URL = https://<ที่อยู่เว็บ/API ที่ deploy>/api/v1`
 
-ตอนนี้โค้ด API พร้อมแล้ว **แต่ยังไม่มี URL deploy ที่ยืนยันว่าใช้งานจริง**; `localhost` บนเครื่องเพื่อนจะไม่ใช่เครื่องเจ้าของโปรเจกต์ ก่อนใช้งานจริงต้องมีโฮสต์ที่เปิดตลอดและเส้นทางจากโฮสต์ไป ESP32/Pi ด้วย
+ตอนนี้โค้ด API พร้อมแล้ว **แต่ยังไม่มี URL deploy ที่ยืนยันว่าใช้งานจริง**; `localhost` บนเครื่องเพื่อนจะไม่ใช่เครื่องเจ้าของโปรเจกต์ ก่อนใช้งานจริงต้อง deploy Render และทดสอบเส้นทางจาก Render ไป ESP32/Pi ด้วย (Render Free อาจพักเมื่อไม่มีการใช้งาน)
 
-แผนฟรีที่เลือกคือ `web/frontend/` บน Cloudflare Pages และ `render.yaml` สำหรับ API บน Render โดย Render ตั้ง `LUMA_PUBLIC_API_ONLY=1` เพื่อปิดเว็บ/API เก่าที่ไม่ได้ใช้คีย์ และใช้ SQLite ชั่วคราวใน `/tmp` ข้อมูลอาจหายเมื่อ Render Free พักหรือรีสตาร์ต ดูขั้นตอนใน [README](../README.md) ก่อน deploy ยังต้องทำทางเชื่อมที่ปลอดภัยจาก Render ไป Pi/ESP32; IP `192.168.x.x` ใช้ตรงจากคลาวด์ไม่ได้ ตัวเลือก VPS เดิมใน `compose.yaml` ยังอยู่เป็นทางเลือกหากต้องการ SQLite ถาวร
+แผนฟรีที่เลือกคือ `web/frontend/` บน Cloudflare Workers และ `render.yaml` สำหรับ API บน Render โดย Render ตั้ง `LUMA_PUBLIC_API_ONLY=1` เพื่อปิดเว็บ/API เก่าที่ไม่ได้ใช้คีย์ และใช้ SQLite ชั่วคราวใน `/tmp` ข้อมูลอาจหายเมื่อ Render Free พักหรือรีสตาร์ต ดูขั้นตอนใน [README](../README.md) ก่อน deploy การเชื่อม Render ไป Pi/ESP32 ใช้ Tailscale ส่วนตัว; ต้องอนุมัติ route ของ ESP32 และใส่ auth key ใน Render ก่อน ตัวเลือก VPS เดิมใน `compose.yaml` ยังอยู่เป็นทางเลือกหากต้องการ SQLite ถาวร
 
 ## การเรียกจากเบราว์เซอร์
 
