@@ -1,0 +1,16 @@
+{$LUMA_SITE_DOMAIN} {
+  encode zstd gzip
+
+  # Friends use the application-level Bearer key; no site password is needed.
+  handle /api/v1/* {
+    reverse_proxy web:3000
+  }
+
+  # Protect the original UI and legacy API as one first-party site.
+  handle {
+    basic_auth {
+      {$LUMA_ADMIN_USER} {$LUMA_ADMIN_PASSWORD_HASH}
+    }
+    reverse_proxy web:3000
+  }
+}

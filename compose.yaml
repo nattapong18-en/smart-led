@@ -1,0 +1,38 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_PATH: /data/luma.sqlite
+      LUMA_PUBLIC_API_ONLY: "0"
+      ESP32_BASE_URL: ${ESP32_BASE_URL:?Set the ESP32 LAN URL in .env}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:?Set the Pi Tailscale URL in .env}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:0.6b}
+      LUMA_API_KEY: ${LUMA_API_KEY:?Set a random API key in .env}
+      LUMA_API_ORIGINS: ${LUMA_API_ORIGINS:?Set allowed frontend origins in .env}
+    volumes:
+      - luma_data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      LUMA_SITE_DOMAIN: ${LUMA_SITE_DOMAIN:?Set a domain pointing to the VPS in .env}
+      LUMA_ADMIN_USER: ${LUMA_ADMIN_USER:?Set a site username in .env}
+      LUMA_ADMIN_PASSWORD_HASH: ${LUMA_ADMIN_PASSWORD_HASH:?Set a Caddy password hash in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  luma_data:
+  caddy_data:
+  caddy_config:

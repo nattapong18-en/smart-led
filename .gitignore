@@ -9,6 +9,8 @@ result/
 *.ses
 compile_commands.json
 include/secrets.h
+.env
+.env.*
 
 # Web dependencies, build output, and environment secrets
 web/node_modules/
