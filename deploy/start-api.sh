@@ -19,7 +19,9 @@ if [ -n "${TS_AUTHKEY:-}" ]; then
   ready=0
   attempt=0
   while [ "$attempt" -lt 30 ]; do
-    if tailscale status >/dev/null 2>&1; then
+    # Plain `tailscale status` exits 1 before login even when the daemon is
+    # ready. JSON status succeeds as soon as the local API is available.
+    if tailscale status --json >/dev/null 2>&1; then
       ready=1
       break
     fi
