@@ -1,0 +1,35 @@
+# Firmware build output and local configuration
+.pio/
+.cache/
+.local/
+.agents/
+.codex/
+voices/
+result/
+*.ses
+compile_commands.json
+include/secrets.h
+
+# Web dependencies, build output, and environment secrets
+web/node_modules/
+web/.next/
+web/out/
+web/*.tsbuildinfo
+web/.env*
+!web/.env.example
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+web/data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Local Thai TTS environment, model/runtime cache, and generated audio
+tts/.venv/
+tts/.cache/
+tts/cache/
+tts/voices/

@@ -1,0 +1,22 @@
+[Unit]
+Description=Luma smart-light web interface
+After=network-online.target ollama.service
+Wants=network-online.target
+RequiresMountsFor=/mnt/storage/smart-led/data
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/smart-led/web
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+Environment=DATABASE_PATH=/mnt/storage/smart-led/data/luma.sqlite
+ExecStart=/usr/bin/npm run start -- --hostname 0.0.0.0 --port 3000
+Restart=on-failure
+RestartSec=3
+MemoryHigh=512M
+MemoryMax=768M
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,23 @@
+[Unit]
+Description=Luma local Thai text-to-speech
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/mnt/storage/smart-led/tts
+Environment=PYTHONUNBUFFERED=1
+Environment=OMP_NUM_THREADS=2
+ExecStart=/mnt/storage/smart-led/tts/.venv/bin/python /mnt/storage/smart-led/tts/server.py
+Restart=on-failure
+RestartSec=3
+Nice=5
+CPUQuota=200%
+MemoryHigh=512M
+MemoryMax=640M
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

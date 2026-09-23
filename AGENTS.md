@@ -1,0 +1,33 @@
+# Smart LED / Luma handoff
+
+Read this section when continuing work in a new chat. The user speaks Thai and has repeatedly clarified the deployment boundary; do not move the web, SQLite, or TTS to the Raspberry Pi without an explicit new request.
+
+## Architecture and ownership
+
+- The user's computer runs the Next.js web app (`web/`, normally `http://localhost:3000`), SQLite (`web/data/luma.sqlite` by default), and Thai VachanaTTS through the web's `/api/speech` route. No separate TTS port is needed for the normal local setup.
+- Raspberry Pi 5 (4 GB RAM, last-known LAN IP `192.168.1.118`) runs **only Ollama AI** (`qwen3:0.6b`). `web/lib/local-light-ai.ts` defaults to `http://127.0.0.1:11434`; a temporary SSH tunnel from the computer to the Pi has been used for testing: `ssh -N -L 11434:127.0.0.1:11434 pi@192.168.1.118`. The tunnel is not a permanent deployment setup. Never put passwords or tokens in source files or this handoff.
+- ESP32 (last-known LAN IP `192.168.1.108`) owns the physical GPIO2/D2 LED and exposes `/status`, `/light`, `/blink`, and `/blink/stop`. The web forwards requests to it through `web/lib/esp32-server.ts`. Verify current IP/connectivity instead of assuming the last-known IP still works.
+- `deploy/luma-web.service` is a legacy example and is **not** the intended architecture. The site may be deployed later, but the user wants the Pi limited to AI.
+
+## Current behavior to preserve
+
+- The assistant is intentionally scoped to **one light**, not general chat, room selection, or color control. Deterministic command parsing is in `web/lib/light-intent.ts`; light-related questions are in `web/lib/light-dialogue.ts`; Ollama is a guarded fallback in `web/lib/local-light-ai.ts`; the orchestration endpoint is `web/app/api/assistant/route.ts`. Do not let an LLM proposal override explicit safety rejections or invent numbers.
+- Thai and English commands cover on/off, brightness, blink timing/count, relative blink speed, stop blink, and status/questions. Turning on an already-on light reports that state instead of resetting brightness. Unknown/out-of-scope text returns examples from `web/lib/light-help.ts` without changing the LED. `web/components/ChatControl.tsx` shows a welcome message on each page load, including instructions to use the microphone.
+- Unknown-command guidance is long and is **not sent to TTS** (`web/lib/reply-speech.ts`), avoiding the 200-character speech limit and the misleading “สร้างเสียงไทยไม่สำเร็จ” alert. Normal short replies still speak. Voice input uses browser speech recognition in `web/components/VoiceControl.tsx`; Thai speech output runs locally on the computer via `tts/` and `/api/speech`.
+- Each page load gets a fresh `X-Luma-Session` ID from `web/lib/browser-api.ts`. Chat and visible command history are scoped to that ID, so closing/reopening (and refreshing) starts a new conversation. SQLite **retains** old audit rows; this is a UI/session reset, not deletion. Saved presets remain tied to the persistent browser cookie through `web/app/api/presets/route.ts`. Preserve this distinction.
+- `web/app/page.tsx` polls the board for status and can show an offline state. The assistant can still give static help and off-topic guidance while ESP32 is offline, but commands or live-status questions require board connectivity.
+
+## Running and checking
+
+1. On the computer, use `cd web && npm ci && npm run dev` (or `npm run build` / `npm test`). Local environment examples are in `web/.env.example`; do not print or commit `.env.local` or `include/secrets.h`.
+2. `cd web && npm test` covers parser, dialogue, session/SQLite, speech-gating, and transcript logic. `npm run build` checks the Next.js/TypeScript production build. Read the relevant guide under `web/node_modules/next/dist/docs/` before editing Next.js code, as required by `web/AGENTS.md`.
+3. `node --experimental-strip-types scripts/probe-light-intents.mjs` from `web/` checks Thai/English command interpretation (48/48 at last verification) and may contact Pi Ollama; it never sends commands to ESP32. It needs the tunnel or another valid `OLLAMA_BASE_URL`.
+4. `node scripts/evaluate-light-integration.mjs` from `web/` **does change the physical LED** and restores its prior state in `finally`; run only when ESP32 is reachable and after checking that this physical test is appropriate. It refuses to interrupt finite blink sequences. Last successful live run preceded the recent session/UI changes; the most recent attempt stopped before sending commands because ESP32 `/status` returned 502.
+
+## Known limits / next checks
+
+- Last observed direct `http://192.168.1.108/status` timed out, and local `/api/esp32/status` returned 502. Investigate board power/Wi-Fi/IP before claiming end-to-end LED behavior is currently healthy. Do not blindly retry a POST after a timeout; the board may have executed it.
+- The Pi model is tiny; the 48/48 curated probe is not proof it understands every unseen phrase. Improve the parser, prompt safeguards, and representative tests before considering model training. Keep Pi resource usage low.
+- A temporary SSH tunnel does not survive shutdown by itself. If asked for permanent deployment, design a secure way for the local/deployed web to reach Pi Ollama without relocating web/DB/TTS to the Pi.
+- Browser-callable external API is under `web/app/api/v1/[...resource]/route.ts`, authenticated/CORS-checked by `web/lib/public-api.ts`; friend-facing contract and prompt are in `web/FRIEND_API.md`. It is not a deployed URL yet. `/api/v1/*` key protection does not protect legacy `/api/*` endpoints if the entire Next server is exposed publicly.
+- The user has now asked to deploy without keeping their computer running, and then explicitly said they will upload to `https://github.com/nattapong18-en/smart-led.git` themselves. Do not perform further GitHub writes unless asked again. This changes the hosting objective but does not solve cloud-to-LAN connectivity. Do not claim deployment complete until a host and secure path to Pi Ollama/ESP32 exist. The GitHub repository was observed empty/public; GitHub app write attempts returned 403, local `gh auth status` reported an invalid CLI token, and SSH public-key auth was denied.
