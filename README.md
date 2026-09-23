@@ -1,17 +1,18 @@
 # Luma Smart Light
 
-Luma controls the ESP32's onboard GPIO2 (D2) LED from a Next.js web app. It supports brightness and blink controls, Thai/English light commands, browser speech recognition, and spoken replies. A rule-based interpreter handles clear commands; a small Ollama model on a Raspberry Pi is a guarded fallback. The project does not use a paid AI API.
+Luma controls the ESP32's onboard GPIO2 (D2) LED. It supports brightness and blink controls, Thai/English light commands, browser speech recognition, and spoken replies. A rule-based interpreter handles clear commands; a small Ollama model on a Raspberry Pi is a guarded fallback. The project does not use a paid AI API.
 
 ## Architecture
 
 | Component | Responsibility |
 | --- | --- |
 | ESP32 | Owns the physical LED and exposes a LAN-only HTTP API. |
-| Raspberry Pi 5 (4 GB) | Runs Ollama `qwen3:0.6b`; Tailscale only provides private connectivity to the VPS. No web app, SQLite, or TTS runs on the Pi. |
-| VPS | Runs the Next.js website and API, SQLite, and VachanaTTS in containers. Caddy provides HTTPS and password protection for the original site. |
+| Raspberry Pi 5 (4 GB) | Runs Ollama `qwen3:0.6b`. No website, SQLite, or TTS runs on the Pi. |
+| Cloudflare Pages | Hosts the static main control website and a separate `/api/` guide for friends. |
+| Render | Hosts the authenticated `/api/v1/*` backend and attempts Thai TTS on the free plan. Its free filesystem is temporary. |
 | Friend's website | Implements its own frontend and calls the authenticated `/api/v1/*` API. |
 
-The VPS design is **prepared but not deployed**. A GitHub upload alone does not create a running service. Deployment needs a VPS, a domain, and a Tailscale connection to the Pi/ESP32. The last-known addresses (`192.168.1.118` for the Pi and `192.168.1.108` for the ESP32) must be verified before use.
+The free split deployment is **prepared but not deployed**. A GitHub upload alone does not create running services. Render still needs a secure route to the Pi and ESP32; private `192.168.x.x` addresses cannot be reached directly from the cloud. The last-known addresses (`192.168.1.118` for the Pi and `192.168.1.108` for the ESP32) must be verified before use. The older VPS/Compose option remains available below if persistent SQLite and an always-on backend become important.
 
 ## ESP32 firmware
 
@@ -58,7 +59,20 @@ cd tts
 
 The first synthesis downloads the voice model into `tts/voices/`. The web serves Thai speech through `/api/speech` on the same port; no separate TTS server is required. Browser speech recognition provides voice input, so support depends on the user's browser.
 
-## Deploy to a VPS
+## Free split deployment: Cloudflare Pages + Render
+
+The static frontend reuses the original control components and has two pages: `/` is the working light-control interface, and `/api/` documents the friend-facing API. The backend is the existing Next.js application running in API-only mode. The frontend asks for the API URL and key at runtime; only the public URL may be baked into a static build. The key stays in tab memory and is not committed or embedded in JavaScript. Each page load creates a new chat session; preset ownership is a separate UUID in browser local storage.
+
+1. Push this repository, including `render.yaml`, `web/frontend/`, the updated `web/package-lock.json`, and `web/lib/browser-api.ts`, to GitHub. The repository owner handles the push.
+2. In Cloudflare Pages, import this GitHub repository and set the **root directory** to `web`, **build command** to `npm run build:frontend`, and **output directory** to `frontend/dist`. Set `NODE_VERSION=22` if the build image does not already use a compatible Node version. The site receives a `*.pages.dev` URL. An optional public build variable `VITE_LUMA_API_URL=https://<render-service>.onrender.com` prefills the API URL field and displays the base URL on `/api/`; never set it to the secret key. You can also leave this variable unset and enter the Render URL on the website.
+3. In Render, create a Blueprint from the same repository using `render.yaml`. It requests one Free Docker web service, sets `LUMA_PUBLIC_API_ONLY=1`, and uses `/health` for health checks. Supply `LUMA_API_KEY` (a random value at least 32 characters), `LUMA_API_ORIGINS` (the exact Cloudflare Pages origin, such as `https://your-project.pages.dev`; add friends' exact origins separated by commas), `OLLAMA_BASE_URL`, and `ESP32_BASE_URL` as private environment values. Render provides a `*.onrender.com` URL. The original Next.js website and legacy API routes are blocked on this API-only service.
+4. Open the Cloudflare control page, enter the Render URL and API key, and use the `/api/` page to share the endpoint list with a friend. Do **not** share the API key publicly; anyone with the key can control the LED. Test `GET /health` first, then the authenticated `/api/v1/status`. The latter requires a working secure upstream connection to the physical devices.
+
+Important free-tier limits: Render Free has 512 MB RAM, sleeps after 15 minutes of inactivity, and loses local SQLite data on sleep/restart/redeploy. The Blueprint therefore writes SQLite to `/tmp/luma.sqlite` for a live classroom demonstration, **not durable storage**; saved presets and audit history can disappear. Thai TTS must be tested on the actual free instance because its memory/CPU are limited. The frontend can stay online while the API sleeps, but the first API request may take about a minute. The free Render service cannot directly reach the Pi or ESP32's LAN IPs; a secure, stable device connection is still required. Do not expose Ollama or the ESP32 unauthenticated to the public internet. No live hardware deployment should be claimed until this path and the board's current IP are verified.
+
+See [Cloudflare Pages build configuration](https://developers.cloudflare.com/pages/configuration/build-configuration/), [Render Docker deployment](https://render.com/docs/web-services), and [Render Free limits](https://render.com/docs/free).
+
+## Optional paid VPS deployment
 
 This deployment keeps the web, database, and TTS off the Pi. The checked-in [`compose.yaml`](compose.yaml) builds the web image, keeps SQLite on a named volume, and places Caddy in front of the app. Caddy requires a username/password for the original website and legacy `/api/*` routes. Only `/api/v1/*` bypasses that site password; those endpoints require a separate Bearer API key and enforce the configured browser origins. The Next.js container has no public host port.
 
@@ -88,7 +102,7 @@ SQLite stores `sessions`, `chat_turns`, `commands`, and `presets` (schema in `we
 
 ## Verification
 
-From `web/`, run `npm test` and `npm run build`. `node scripts/check-public-api.mjs` tests auth, CORS, chat help, history, validation, and presets without changing the physical LED (set `LUMA_URL`, `LUMA_API_KEY`, and `LUMA_ORIGIN` for the target server). `node --experimental-strip-types scripts/probe-light-intents.mjs` checks command interpretation and does not command the ESP32. The physical integration script `node scripts/evaluate-light-integration.mjs` **does change the LED** and should only run when the board is reachable and it is safe to interrupt its current state.
+From `web/`, run `npm test`, `npm run build`, and `npm run build:frontend`. `node scripts/check-public-api.mjs` tests auth, CORS, chat help, history, validation, and presets without changing the physical LED (set `LUMA_URL`, `LUMA_API_KEY`, and `LUMA_TEST_ORIGIN` for the target server). `node --experimental-strip-types scripts/probe-light-intents.mjs` checks command interpretation and does not command the ESP32. The physical integration script `node scripts/evaluate-light-integration.mjs` **does change the LED** and should only run when the board is reachable and it is safe to interrupt its current state.
 
 The last live board check timed out, so a successful container/API test is not proof that the ESP32 is currently online. Verify its power, Wi-Fi connection, and IP before claiming end-to-end success.
 

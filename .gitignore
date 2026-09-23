@@ -16,6 +16,7 @@ include/secrets.h
 web/node_modules/
 web/.next/
 web/out/
+web/frontend/dist/
 web/*.tsbuildinfo
 web/.env*
 !web/.env.example

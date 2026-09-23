@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: luma-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_PATH
+        value: /tmp/luma.sqlite
+      - key: LUMA_PUBLIC_API_ONLY
+        value: "1"
+      - key: LUMA_API_KEY
+        sync: false
+      - key: LUMA_API_ORIGINS
+        sync: false
+      - key: OLLAMA_BASE_URL
+        sync: false
+      - key: ESP32_BASE_URL
+        sync: false
+      - key: OLLAMA_MODEL
+        value: qwen3:0.6b

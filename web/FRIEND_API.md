@@ -1,12 +1,12 @@
 # Luma API สำหรับเว็บของเพื่อน
 
-เพื่อนทำเฉพาะหน้าเว็บได้เลย API อยู่ที่เว็บ Next.js ของเจ้าของโปรเจกต์ ไม่ต้องเรียก Pi หรือ ESP32 โดยตรง:
+เพื่อนทำเฉพาะหน้าเว็บได้เลย API อยู่ที่ Render backend ของเจ้าของโปรเจกต์ ส่วนเว็บหลักและหน้าคู่มือ `/api/` อยู่บน Cloudflare Pages ไม่ต้องเรียก Pi หรือ ESP32 โดยตรง:
 
 `BASE_URL = https://<ที่อยู่เว็บ/API ที่ deploy>/api/v1`
 
 ตอนนี้โค้ด API พร้อมแล้ว **แต่ยังไม่มี URL deploy ที่ยืนยันว่าใช้งานจริง**; `localhost` บนเครื่องเพื่อนจะไม่ใช่เครื่องเจ้าของโปรเจกต์ ก่อนใช้งานจริงต้องมีโฮสต์ที่เปิดตลอดและเส้นทางจากโฮสต์ไป ESP32/Pi ด้วย
 
-มี `Dockerfile` และ `compose.yaml` ที่ root สำหรับโฮสต์ Next.js/SQLite/เสียงไทยบน VPS พร้อม Caddy/HTTPS โดยเก็บ SQLite บน volume `/data` และตั้ง `LUMA_API_KEY`, `LUMA_API_ORIGINS`, `OLLAMA_BASE_URL`, `ESP32_BASE_URL` บนโฮสต์ อ่านขั้นตอนใน [README](../README.md) ก่อน deploy ชุด Compose ให้เว็บหลักและ API เก่าทำงานได้โดย Caddy ป้องกันด้วยรหัสผ่าน และ `/api/v1/*` ยังต้องใช้ Bearer API key; ห้ามเปิดพอร์ต Next.js 3000 สู่สาธารณะ หาก Pi/ESP32 ยังมีแค่ IP `192.168.x.x` โฮสต์บนคลาวด์จะติดต่อไม่ได้จนกว่าจะจัด Tailscale ให้เรียบร้อย
+แผนฟรีที่เลือกคือ `web/frontend/` บน Cloudflare Pages และ `render.yaml` สำหรับ API บน Render โดย Render ตั้ง `LUMA_PUBLIC_API_ONLY=1` เพื่อปิดเว็บ/API เก่าที่ไม่ได้ใช้คีย์ และใช้ SQLite ชั่วคราวใน `/tmp` ข้อมูลอาจหายเมื่อ Render Free พักหรือรีสตาร์ต ดูขั้นตอนใน [README](../README.md) ก่อน deploy ยังต้องทำทางเชื่อมที่ปลอดภัยจาก Render ไป Pi/ESP32; IP `192.168.x.x` ใช้ตรงจากคลาวด์ไม่ได้ ตัวเลือก VPS เดิมใน `compose.yaml` ยังอยู่เป็นทางเลือกหากต้องการ SQLite ถาวร
 
 ## การเรียกจากเบราว์เซอร์
 

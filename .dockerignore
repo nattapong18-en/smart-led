@@ -14,6 +14,7 @@ include/secrets.h
 web/node_modules
 web/.next
 web/out
+web/frontend/dist
 web/data
 web/.env*
 !web/.env.example

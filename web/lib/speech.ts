@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { browserApiFetch } from "./browser-api";
 
 export function useReplySpeech() {
   const [supported, setSupported] = useState(false);
@@ -65,7 +66,7 @@ export function useReplySpeech() {
     pending.current = controller;
     setLoading(true);
     try {
-      const response = await fetch("/api/speech", {
+      const response = await browserApiFetch("/api/speech", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),

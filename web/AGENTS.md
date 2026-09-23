@@ -8,4 +8,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-For project-specific architecture, current behavior, verification commands, and unresolved connectivity, read the handoff in the repository-root `AGENTS.md` before changing this web app. In particular: web/SQLite/TTS run on the user's computer for local development and are planned for the VPS in production; Pi 5 runs only Ollama plus Tailscale connectivity, and ESP32 controls the LED.
+For project-specific architecture, current behavior, verification commands, and unresolved connectivity, read the handoff in the repository-root `AGENTS.md` before changing this web app. In particular: the original Next.js web/SQLite/TTS run locally for development; the selected free deployment splits static Cloudflare Pages frontend from the Render API-only backend; Pi 5 runs Ollama and ESP32 controls the LED.
