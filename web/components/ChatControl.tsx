@@ -69,7 +69,10 @@ export default function ChatControl({ onCommand, onHistoryReady }: ChatControlPr
       setLastReply(speakable ? reply : "");
       if (signal?.aborted) return false;
       if (!speakable) return true;
-      return await speech.speak(reply);
+      // A TTS failure must not cancel an otherwise successful voice command
+      // or permanently stop the continuous microphone loop.
+      await speech.speak(reply);
+      return true;
     } catch {
       setMessages((previous) => [...previous, {
         role: "ระบบ", text: "ส่งคำสั่งไม่สำเร็จ กรุณาลองอีกครั้ง",

@@ -11,6 +11,8 @@ const python = join(root, '.venv/bin/python');
 const synthesizer = join(root, 'synthesize.py');
 const cache = join(root, 'cache');
 
+export class TtsCacheMissError extends Error {}
+
 export function hasLocalTts() {
   return existsSync(python) && existsSync(synthesizer);
 }
@@ -25,9 +27,13 @@ export async function synthesizeLocal(text: string): Promise<Uint8Array> {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
 
+  if (process.env.LUMA_TTS_PRECOMPUTED_ONLY === '1') throw new TtsCacheMissError('Thai TTS phrase is not precomputed');
+
   const temporary = join(cache, `${digest}.${randomUUID()}.wav`);
   try {
-    await run(python, [synthesizer, text, temporary], { cwd: root, timeout: 30_000, maxBuffer: 1024 * 1024 });
+    // Render Free has only 0.1 CPU; loading the voice and synthesizing a new
+    // phrase can exceed 30 seconds even when the process is healthy.
+    await run(python, [synthesizer, text, temporary], { cwd: root, timeout: 120_000, maxBuffer: 1024 * 1024 });
     const audio = await readFile(temporary);
     if (audio.length < 44 || audio.toString('ascii', 0, 4) !== 'RIFF' || audio.toString('ascii', 8, 12) !== 'WAVE') {
       throw new Error('Thai TTS produced an invalid WAV file');

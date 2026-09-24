@@ -11,6 +11,8 @@ services:
         value: /tmp/luma.sqlite
       - key: LUMA_PUBLIC_API_ONLY
         value: "1"
+      - key: LUMA_TTS_PRECOMPUTED_ONLY
+        value: "1"
       - key: LUMA_REQUIRE_TAILSCALE
         value: "1"
       - key: LUMA_API_KEY

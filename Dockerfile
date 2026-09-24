@@ -21,8 +21,7 @@ COPY tts/ /app/tts/
 COPY deploy/start-api.sh /app/start-api.sh
 RUN python -m venv /app/tts/.venv \
     && /app/tts/.venv/bin/pip install --no-cache-dir -r /app/tts/requirements.txt \
-    && cd /app/tts && .venv/bin/python synthesize.py "ทดสอบระบบ" /tmp/luma-tts-warm.wav \
-    && rm /tmp/luma-tts-warm.wav
+    && cd /app/tts && .venv/bin/python warm_cache.py
 RUN mkdir -p /data /app/tts/cache
 ENV NODE_ENV=production DATABASE_PATH=/data/luma.sqlite NEXT_TELEMETRY_DISABLED=1 LUMA_PUBLIC_API_ONLY=1
 WORKDIR /app/web

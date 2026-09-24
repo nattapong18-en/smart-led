@@ -2,9 +2,9 @@
 
 เพื่อนทำเฉพาะหน้าเว็บได้เลย API อยู่ที่ Render backend ของเจ้าของโปรเจกต์ ส่วนเว็บหลักและหน้าคู่มือ `/api/` อยู่บน Cloudflare Workers static assets ไม่ต้องเรียก Pi หรือ ESP32 โดยตรง:
 
-`BASE_URL = https://<ที่อยู่เว็บ/API ที่ deploy>/api/v1`
+`BASE_URL = https://luma-api-5c0a.onrender.com/api/v1`
 
-ตอนนี้โค้ด API พร้อมแล้ว **แต่ยังไม่มี URL deploy ที่ยืนยันว่าใช้งานจริง**; `localhost` บนเครื่องเพื่อนจะไม่ใช่เครื่องเจ้าของโปรเจกต์ ก่อนใช้งานจริงต้อง deploy Render และทดสอบเส้นทางจาก Render ไป ESP32/Pi ด้วย (Render Free อาจพักเมื่อไม่มีการใช้งาน)
+Render API ขึ้น Live แล้ว และเจ้าของโปรเจกต์รายงานว่าหน้าเว็บสั่งไฟได้ แต่การสร้างเสียงไทยสดบน Render Free ใช้ CPU เกินเวลาที่เหมาะสม จึงเตรียมเสียงคำตอบเกี่ยวกับไฟไว้ตอน build และให้เว็บใช้เสียงเบราว์เซอร์สำรองสำหรับประโยคอื่น หลัง redeploy ต้องทดสอบ `/speech` อีกครั้ง; `localhost` บนเครื่องเพื่อนจะไม่ใช่เครื่องเจ้าของโปรเจกต์ (Render Free อาจพักเมื่อไม่มีการใช้งาน)
 
 แผนฟรีที่เลือกคือ `web/frontend/` บน Cloudflare Workers และ `render.yaml` สำหรับ API บน Render โดย Render ตั้ง `LUMA_PUBLIC_API_ONLY=1` เพื่อปิดเว็บ/API เก่าที่ไม่ได้ใช้คีย์ และใช้ SQLite ชั่วคราวใน `/tmp` ข้อมูลอาจหายเมื่อ Render Free พักหรือรีสตาร์ต ดูขั้นตอนใน [README](../README.md) ก่อน deploy การเชื่อม Render ไป Pi/ESP32 ใช้ Tailscale ส่วนตัว; ต้องอนุมัติ route ของ ESP32 และใส่ auth key ใน Render ก่อน ตัวเลือก VPS เดิมใน `compose.yaml` ยังอยู่เป็นทางเลือกหากต้องการ SQLite ถาวร
 
@@ -27,7 +27,7 @@
 | `POST /light` | `{ "brightness": 0..100 }` → status | ตั้งความสว่าง; 0 คือปิด |
 | `POST /blink` | `{ "brightness": 1..100, "onMs": 50..5000, "offMs": 50..5000, "count": 0..100 }` → status | กระพริบ; count 0 คือต่อเนื่อง |
 | `POST /blink/stop` | ไม่มี body → status | หยุดกระพริบ |
-| `POST /speech` | `{ "text": "กำลังเปิดไฟให้ครับ" }` → WAV | เสียงไทยสั้น ๆ ไม่เกิน 200 ตัวอักษร |
+| `POST /speech` | `{ "text": "กำลังเปิดไฟให้ครับ" }` → WAV | เสียงไทยสั้น ๆ ไม่เกิน 200 ตัวอักษร; บน Render Free ประโยคที่ไม่มีในแคชตอบ 503 `code: "tts_cache_miss"` ให้ frontend ใช้เสียงเบราว์เซอร์สำรอง |
 | `GET /history` | `{ "turns": [...], "commands": [...] }` | ประวัติของ `X-Luma-Session` ปัจจุบัน |
 | `GET /presets` | `{ "presets": [...] }` | อ่านโหมดของ `X-Luma-Owner` |
 | `POST /presets` | `{ "name": "อ่านหนังสือ", "mode": "steady", "brightness": 70, "onMs": 500, "offMs": 500, "count": 0 }` | บันทึกโหมด; mode เป็น `steady` หรือ `blink` |
@@ -60,7 +60,7 @@ async function luma(path: string, options: RequestInit = {}) {
 await luma("/chat", { method: "POST", body: JSON.stringify({ message: "กระพริบไฟช้า" }) });
 ```
 
-สำหรับ `/speech` ให้ใช้ `response.blob()` แทน `.json()` แล้วเล่นด้วย `Audio(URL.createObjectURL(blob))` เบราว์เซอร์บางตัวต้องให้ผู้ใช้กดปุ่มก่อนจึงเล่นเสียงได้
+สำหรับ `/speech` ที่สำเร็จ ให้ใช้ `response.blob()` แทน `.json()` แล้วเล่นด้วย `Audio(URL.createObjectURL(blob))` ถ้าได้ `503` และ `code: "tts_cache_miss"` ให้ใช้ `SpeechSynthesisUtterance` ภาษา `th-TH` ในเบราว์เซอร์เป็นทางสำรอง (คุณภาพขึ้นอยู่กับอุปกรณ์) เบราว์เซอร์บางตัวต้องให้ผู้ใช้กดปุ่มก่อนจึงเล่นเสียงได้
 
 ## Prompt ให้เพื่อนส่งให้ AI สร้างเว็บ
 

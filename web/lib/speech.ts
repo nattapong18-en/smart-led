@@ -72,7 +72,15 @@ export function useReplySpeech() {
         body: JSON.stringify({ text }),
         signal: controller.signal,
       });
-      if (!response.ok) throw new Error("local TTS unavailable");
+      if (!response.ok) {
+        const failure = await response.json().catch(() => null) as { code?: string } | null;
+        if (response.status === 503 && failure?.code === "tts_cache_miss") {
+          if (ticket !== generation.current) return false;
+          setLoading(false);
+          return await speakBrowser(text, "th-TH");
+        }
+        throw new Error("local TTS unavailable");
+      }
       const blob = await response.blob();
       if (ticket !== generation.current) return false;
       if (!response.headers.get("content-type")?.startsWith("audio/") || blob.size < 44) throw new Error("invalid audio");
@@ -102,18 +110,29 @@ export function useReplySpeech() {
     }
   }
 
-  async function speakEnglish(text: string): Promise<boolean> {
-    if (!("speechSynthesis" in window)) return false;
+  async function speakBrowser(text: string, language: "th-TH" | "en-US"): Promise<boolean> {
+    if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+      setError("อุปกรณ์นี้ไม่มีเสียงอ่านสำรอง");
+      return false;
+    }
     return await new Promise<boolean>((resolve) => {
       const current = new SpeechSynthesisUtterance(text);
-      current.lang = "en-US";
+      current.lang = language;
       current.rate = 1;
+      current.voice = window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith(language.slice(0, 2))) ?? null;
       utterance.current = current;
       finish.current = resolve;
-      current.onstart = () => setSpeaking(true);
+      current.onstart = () => { setLoading(false); setSpeaking(true); };
       current.onend = () => { finish.current = null; stop(); resolve(true); };
-      current.onerror = () => { finish.current = null; stop(); setError("เบราว์เซอร์เล่นเสียงอังกฤษไม่สำเร็จ"); resolve(false); };
-      window.speechSynthesis.speak(current);
+      current.onerror = () => { finish.current = null; stop(); setError(language === "th-TH" ? "เบราว์เซอร์เล่นเสียงไทยสำรองไม่สำเร็จ" : "เบราว์เซอร์เล่นเสียงอังกฤษไม่สำเร็จ"); resolve(false); };
+      try {
+        window.speechSynthesis.speak(current);
+      } catch {
+        finish.current = null;
+        stop();
+        setError("เบราว์เซอร์เริ่มอ่านเสียงไม่สำเร็จ");
+        resolve(false);
+      }
     });
   }
 
@@ -122,7 +141,7 @@ export function useReplySpeech() {
     if (!text.trim()) return false;
     stop();
     setError("");
-    return /[฀-๿]/.test(text) ? speakThai(text) : speakEnglish(text);
+    return /[฀-๿]/.test(text) ? speakThai(text) : speakBrowser(text, "en-US");
   }
 
   function toggle() {

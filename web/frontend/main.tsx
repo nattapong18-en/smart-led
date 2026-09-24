@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
 import Home from "../app/page";
 import { clearExternalApi, configureExternalApi, enableExternalApiMode, savedExternalApiUrl } from "../lib/browser-api";
+import { DEFAULT_API_URL } from "./config";
 import "../app/globals.css";
 import "./site.css";
 
@@ -10,7 +11,7 @@ enableExternalApiMode();
 
 function App() {
   const [connected, setConnected] = useState(false);
-  const [apiUrl, setApiUrl] = useState(() => savedExternalApiUrl() || import.meta.env.VITE_LUMA_API_URL || "");
+  const [apiUrl, setApiUrl] = useState(() => savedExternalApiUrl() || DEFAULT_API_URL);
   const [apiKey, setApiKey] = useState("");
   const [error, setError] = useState("");
 

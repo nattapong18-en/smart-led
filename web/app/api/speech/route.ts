@@ -1,4 +1,4 @@
-import { hasLocalTts, synthesizeLocal } from '@/lib/local-tts';
+import { hasLocalTts, synthesizeLocal, TtsCacheMissError } from '@/lib/local-tts';
 
 export const runtime = "nodejs";
 
@@ -35,6 +35,9 @@ export async function POST(request: Request) {
       headers: { "Content-Type": "audio/wav", "Cache-Control": "no-store" },
     });
   } catch (error) {
+    if (error instanceof TtsCacheMissError) {
+      return Response.json({ error: "เสียงประโยคนี้ไม่มีในเครื่อง", code: "tts_cache_miss" }, { status: 503 });
+    }
     console.error("Local Thai TTS failed:", error);
     return Response.json({ error: "สร้างเสียงไทยไม่สำเร็จ" }, { status: 503 });
   }

@@ -14,6 +14,15 @@ type VoiceControlProps = {
   onActiveChange?: (active: boolean) => void;
 };
 
+function recognitionErrorMessage(code: string) {
+  if (code === "not-allowed" || code === "service-not-allowed") return "Chrome ไม่ได้รับอนุญาตใช้ไมโครโฟน กรุณาอนุญาตในตั้งค่าเว็บไซต์";
+  if (code === "audio-capture") return "Chrome หาไมโครโฟนไม่พบ ตรวจไมค์และสิทธิ์ของอุปกรณ์";
+  if (code === "network") return "บริการรู้จำเสียงของ Chrome ติดต่อเครือข่ายไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่";
+  if (code === "no-speech") return "ยังไม่ได้ยินเสียง กดไมค์แล้วพูดอีกครั้ง";
+  if (code === "language-not-supported") return "Chrome ไม่รองรับภาษาเสียงที่เลือก ลองเปลี่ยน TH/EN";
+  return "รับเสียงไม่สำเร็จ กดเริ่มคุยอีกครั้งได้เลย";
+}
+
 export default function VoiceControl({ onCommand, disabled = false, onStartListening, onStop, onActiveChange }: VoiceControlProps) {
   const [active, setActive] = useState(false);
   const [recognitionLanguage, setRecognitionLanguage] = useState("th-TH");
@@ -85,7 +94,7 @@ export default function VoiceControl({ onCommand, disabled = false, onStartListe
     };
     current.onerror = (event: any) => {
       if (controller.signal.aborted) return;
-      setError(event.error === "not-allowed" ? "กรุณาอนุญาตไมโครโฟน แล้วเริ่มคุยอีกครั้ง" : "รับเสียงไม่สำเร็จ กดเริ่มคุยอีกครั้งได้เลย");
+      setError(recognitionErrorMessage(event.error));
       stop();
     };
     current.onend = async () => {

@@ -1,9 +1,9 @@
 import { createRoot } from "react-dom/client";
+import { DEFAULT_API_URL } from "../config";
 import "../../app/globals.css";
 import "../site.css";
 
-const configuredUrl = import.meta.env.VITE_LUMA_API_URL?.replace(/\/+$/, "") || "https://YOUR-API.onrender.com";
-const baseUrl = `${configuredUrl}/api/v1`;
+const baseUrl = `${DEFAULT_API_URL}/api/v1`;
 
 const endpoints = [
   ["GET", "/status", "ดูสถานะไฟปัจจุบัน"],
@@ -27,7 +27,7 @@ function ApiGuide() {
       <p><code>POST /light</code> ส่ง <code>{'{"brightness":70}'}</code> ค่า 0–100 โดย 0 คือปิดไฟ</p>
       <p><code>POST /blink</code> ส่ง <code>{'{"brightness":80,"onMs":200,"offMs":300,"count":5}'}</code> ความสว่าง 1–100, เวลา 50–5000 ms, count 0–100 โดย 0 คือต่อเนื่อง</p>
       <p><code>POST /blink/stop</code> ไม่ต้องส่ง body; <code>GET /status</code> และคำสั่งควบคุมไฟที่สำเร็จตอบสถานะจริงจาก ESP32</p>
-      <p><code>POST /speech</code> ส่ง <code>{'{"text":"กำลังเปิดไฟให้ครับ"}'}</code> และรับ <code>audio/wav</code> แทน JSON; ข้อความไม่เกิน 200 ตัวอักษร</p>
+      <p><code>POST /speech</code> ส่ง <code>{'{"text":"กำลังเปิดไฟให้ครับ"}'}</code> และรับ <code>audio/wav</code> แทน JSON; ข้อความไม่เกิน 200 ตัวอักษร บน Render Free ถ้าประโยคไม่มีในเสียงที่เตรียมไว้จะได้ <code>503</code> พร้อม <code>code: "tts_cache_miss"</code> ให้เว็บใช้เสียงไทยของเบราว์เซอร์แทน</p>
       <p><code>POST /presets</code> ส่ง <code>{'{"name":"อ่านหนังสือ","mode":"steady","brightness":70,"onMs":500,"offMs":500,"count":0}'}</code> หรือ <code>{'{"action":"apply","id":1}'}</code>; ลบด้วย <code>DELETE /presets?id=1</code> ทุกคำขอ preset ต้องมี <code>X-Luma-Owner</code></p>
       <p>ข้อผิดพลาดใช้ HTTP status จริง เช่น 400 ข้อมูลผิด, 401 คีย์ผิด, 403 origin ไม่อนุญาต, 502 ติดต่อ ESP32 ไม่ได้ ดู <a href="https://github.com/nattapong18-en/smart-led/blob/main/web/FRIEND_API.md" target="_blank" rel="noopener noreferrer">สัญญา API ฉบับเต็มใน GitHub ↗</a></p>
     </section>
