@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
-import Home from "../app/page";
+import Dashboard from "../components/Dashboard";
 import { clearExternalApi, configureExternalApi, enableExternalApiMode, savedExternalApiUrl } from "../lib/browser-api";
 import { DEFAULT_API_URL } from "./config";
 import "../app/globals.css";
@@ -28,14 +28,15 @@ function App() {
   }
 
   return <>
-    <nav className="site-nav" aria-label="เว็บไซต์ Luma">
+    {connected ? <Dashboard topbarExtra={<nav className="topbar-links" aria-label="เว็บไซต์ Lumen Home">
+      <a href="/api/" target="_blank" rel="noopener noreferrer">คู่มือ API ↗</a>
+      <button type="button" onClick={() => { clearExternalApi(); setConnected(false); }}>เปลี่ยนการเชื่อมต่อ</button>
+    </nav>} /> : <><nav className="site-nav" aria-label="เว็บไซต์ Lumen Home">
       <a href="/" aria-current="page">ควบคุมไฟ</a>
       <a href="/api/" target="_blank" rel="noopener noreferrer">คู่มือ API สำหรับเพื่อน ↗</a>
-      {connected && <button type="button" onClick={() => { clearExternalApi(); setConnected(false); }}>เปลี่ยนการเชื่อมต่อ</button>}
-    </nav>
-    {connected ? <Home /> : <main className="connect-page">
+    </nav><main className="connect-page">
       <div className="connect-card">
-        <p className="eyebrow">LUMA · SMART LIGHT</p>
+        <p className="eyebrow">LUMEN HOME · SMART LIGHT</p>
         <h1>เชื่อมต่อระบบควบคุมไฟ</h1>
         <p>ใส่ URL ของ API บน Render และคีย์ที่เจ้าของโปรเจกต์ให้มา จากนั้นใช้แชต เสียง และปุ่มควบคุมไฟได้ในหน้านี้</p>
         <form onSubmit={connect}>
@@ -46,7 +47,7 @@ function App() {
         </form>
         <p className="connect-note">คีย์อยู่ในหน่วยความจำของแท็บนี้เท่านั้น เมื่อรีเฟรชหรือปิดแท็บต้องกรอกใหม่ ประวัติแชตหน้าเว็บจะเริ่มใหม่เช่นกัน</p>
       </div>
-    </main>}
+    </main></>}
     <Toaster richColors position="top-right" />
   </>;
 }

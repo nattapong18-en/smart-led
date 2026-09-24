@@ -1,4 +1,4 @@
-# Luma API สำหรับเว็บของเพื่อน
+# Lumen Home API สำหรับเว็บของเพื่อน
 
 เพื่อนทำเฉพาะหน้าเว็บได้เลย API อยู่ที่ Render backend ของเจ้าของโปรเจกต์ ส่วนเว็บหลักและหน้าคู่มือ `/api/` อยู่บน Cloudflare Workers static assets ไม่ต้องเรียก Pi หรือ ESP32 โดยตรง:
 
@@ -41,9 +41,9 @@ Render API ขึ้น Live แล้ว และเจ้าของโป�
 ```ts
 const base = "https://<ที่อยู่เว็บ/API ที่ deploy>/api/v1";
 const session = crypto.randomUUID();
-const apiKey = prompt("Luma API key") ?? "";
+const apiKey = prompt("Lumen Home API key") ?? "";
 
-async function luma(path: string, options: RequestInit = {}) {
+async function lumen(path: string, options: RequestInit = {}) {
   const response = await fetch(base + path, {
     ...options,
     headers: {
@@ -57,11 +57,11 @@ async function luma(path: string, options: RequestInit = {}) {
   return response.json();
 }
 
-await luma("/chat", { method: "POST", body: JSON.stringify({ message: "กระพริบไฟช้า" }) });
+await lumen("/chat", { method: "POST", body: JSON.stringify({ message: "กระพริบไฟช้า" }) });
 ```
 
 สำหรับ `/speech` ที่สำเร็จ ให้ใช้ `response.blob()` แทน `.json()` แล้วเล่นด้วย `Audio(URL.createObjectURL(blob))` ถ้าได้ `503` และ `code: "tts_cache_miss"` ให้ใช้ `SpeechSynthesisUtterance` ภาษา `th-TH` ในเบราว์เซอร์เป็นทางสำรอง (คุณภาพขึ้นอยู่กับอุปกรณ์) เบราว์เซอร์บางตัวต้องให้ผู้ใช้กดปุ่มก่อนจึงเล่นเสียงได้
 
 ## Prompt ให้เพื่อนส่งให้ AI สร้างเว็บ
 
-> สร้างเว็บ frontend สำหรับควบคุมไฟ LED ด้วย Luma API ที่มีอยู่แล้ว ฉันทำเฉพาะ UI/UX ไม่สร้าง backend หรือ AI ใหม่ อ่านสัญญา API ใน `FRIEND_API.md` นี้ให้ครบ แล้วออกแบบหน้าเว็บตามสไตล์ที่ฉันต้องการ มีสถานะไฟแบบสด ปุ่มเปิด/ปิด สไลเดอร์ 0–100% ตั้งค่ากระพริบและหยุดกระพริบ แชตไทย/อังกฤษ ประวัติ โหมดไฟที่บันทึก และปุ่มพูดสั่งงาน/ฟังเสียงตอบกลับถ้าเบราว์เซอร์รองรับ ให้ถามผู้ใช้กรอก API URL และ API key ตอนเปิดเว็บ อย่าฝังคีย์ใน source หรือ commit ใช้ `X-Luma-Session` ใหม่ต่อการเปิดหน้า และ `X-Luma-Owner` คงเดิมสำหรับโหมดไฟ จัดการ loading/error/ESP32 offline ตาม HTTP status จริง ไม่ retry POST ควบคุมไฟโดยอัตโนมัติ และอย่าแสดงว่าไฟเปลี่ยนแล้วจน API ตอบสำเร็จ
+> สร้างเว็บ frontend สำหรับควบคุมไฟ LED ด้วย Lumen Home API ที่มีอยู่แล้ว ฉันทำเฉพาะ UI/UX ไม่สร้าง backend หรือ AI ใหม่ อ่านสัญญา API ใน `FRIEND_API.md` นี้ให้ครบ แล้วออกแบบหน้าเว็บตามสไตล์ที่ฉันต้องการ มีสถานะไฟแบบสด ปุ่มเปิด/ปิด สไลเดอร์ 0–100% ตั้งค่ากระพริบและหยุดกระพริบ แชตไทย/อังกฤษ ประวัติ โหมดไฟที่บันทึก และปุ่มพูดสั่งงาน/ฟังเสียงตอบกลับถ้าเบราว์เซอร์รองรับ ให้ถามผู้ใช้กรอก API URL และ API key ตอนเปิดเว็บ อย่าฝังคีย์ใน source หรือ commit ใช้ `X-Luma-Session` ใหม่ต่อการเปิดหน้า และ `X-Luma-Owner` คงเดิมสำหรับโหมดไฟ จัดการ loading/error/ESP32 offline ตาม HTTP status จริง ไม่ retry POST ควบคุมไฟโดยอัตโนมัติ และอย่าแสดงว่าไฟเปลี่ยนแล้วจน API ตอบสำเร็จ

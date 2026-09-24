@@ -7,15 +7,17 @@ import { useReplySpeech } from "../lib/speech";
 import { LIGHT_INTRO_TH } from "../lib/light-help";
 import { browserApiFetch } from "../lib/browser-api";
 import { speechTextForReply } from "../lib/reply-speech";
-import { ArrowUp, AudioLines, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { ArrowUp, AudioLines, Sparkles, Volume2, VolumeX, X } from 'lucide-react';
 import { Button } from './ui/button';
 
 type ChatControlProps = {
+  open: boolean;
+  onClose: () => void;
   onCommand: (text: string) => Promise<string>;
   onHistoryReady?: () => void;
 };
 
-export default function ChatControl({ onCommand, onHistoryReady }: ChatControlProps) {
+export default function ChatControl({ open, onClose, onCommand, onHistoryReady }: ChatControlProps) {
   const speech = useReplySpeech();
   const [voiceActive, setVoiceActive] = useState(false);
   const [lastReply, setLastReply] = useState("");
@@ -85,14 +87,14 @@ export default function ChatControl({ onCommand, onHistoryReady }: ChatControlPr
   }
 
   return (
-    <section className="ai-card" aria-labelledby="chat-heading">
-      <div className="ai-heading"><div className="ai-icon" aria-hidden="true"><Sparkles size={19} /></div><div><p className="section-kicker">YOUR LIGHT COMPANION</p><h2 id="chat-heading">ผู้ช่วยควบคุมแสง</h2></div><span className="ai-badge"><span className="status-dot" /> LOCAL AI</span></div>
+    <aside className={`assistant ${open ? "assistant-open" : ""}`} id="assistant-panel" aria-labelledby="chat-heading" inert={!open}>
+      <div className="ai-heading"><div className="ai-icon" aria-hidden="true"><Sparkles size={18} /></div><div><h2 id="chat-heading">ผู้ช่วย Lumen</h2><span className="ai-badge"><span className="status-dot" /> AI ในเครื่อง · พิมพ์หรือพูดได้</span></div><Button type="button" variant="ghost" size="icon" className="assistant-close" onClick={onClose} aria-label="ปิดแผงผู้ช่วย"><X size={18} /></Button></div>
       <div ref={log} className="chat-log" role="log" aria-label="ประวัติคำสั่ง" aria-live="polite">
         {messages.map((message, index) => <div className={`message ${message.role === "คุณ" ? "user-message" : "assistant-message"}`} key={index}><span className="message-author">{message.role === "คุณ" ? "คุณ" : <><Sparkles size={11} /> ผู้ช่วย</>}</span><p>{message.text}</p></div>)}
-        <div className="suggestions">{["เปิดไฟ", "ตั้งความสว่าง 50%", "กระพริบไฟช้า", "ตอนนี้ไฟเปิดอยู่ไหม"].map((text) => <button key={text} type="button" onClick={() => { setInput(text); inputRef.current?.focus(); }}>{text}<ArrowUp size={13} /></button>)}</div>
         {busy && <div className="thinking" role="status"><AudioLines size={17} className="thinking-icon" /> กำลังประมวลผลคำสั่ง…</div>}
       </div>
       <form className="chat-form" onSubmit={sendCommand}>
+        <div className="suggestions" aria-label="ตัวอย่างคำสั่ง">{["เปิดไฟ", "ตั้งความสว่าง 50%", "กระพริบไฟช้า", "ตอนนี้ไฟเปิดอยู่ไหม"].map((text) => <button key={text} type="button" onClick={() => { setInput(text); inputRef.current?.focus(); }}>{text}<ArrowUp size={12} /></button>)}</div>
         <label className="sr-only" htmlFor="chat-command">ข้อความถึง AI</label>
         <div className="composer"><input ref={inputRef} id="chat-command" disabled={voiceActive || !historyReady} value={input} onChange={(event) => setInput(event.target.value)} aria-describedby="chat-help" placeholder="บอกผู้ช่วยว่าอยากได้แสงแบบไหน…" maxLength={200} />
           <VoiceControl onCommand={submitMessage} disabled={busy || !historyReady} onStartListening={() => { speech.stop(); void speech.prepare(); }} onStop={speech.stop} onActiveChange={setVoiceActive} />
@@ -104,8 +106,8 @@ export default function ChatControl({ onCommand, onHistoryReady }: ChatControlPr
           {speech.speaking || speech.loading ? <Button type="button" variant="ghost" size="sm" onClick={speech.stop}>หยุดอ่าน</Button> : lastReply && <Button type="button" variant="ghost" size="sm" disabled={!speech.supported || !speech.enabled || busy || voiceActive} onClick={() => { void speech.prepare().then(() => speech.speak(lastReply)); }}>ฟังอีกครั้ง</Button>}
           {speech.error && <p role="alert">{speech.error}</p>}
         </div>
-        <p id="chat-help" className="fine-print"><span aria-hidden="true">✦</span> ทำงานในเครื่อง ไม่ใช้ AI API · ต้องการค่าที่แน่นอน? <a href="#manual-heading">ปรับไฟเอง ↗</a></p>
+        <p id="chat-help" className="fine-print"><span aria-hidden="true">✦</span> ทำงานในเครื่อง ไม่ใช้ AI API · ต้องการค่าที่แน่นอน? <a href="#lamp-dial" onClick={() => { if (window.matchMedia("(max-width: 1099px)").matches) onClose(); }}>ปรับไฟเอง ↗</a></p>
       </form>
-    </section>
+    </aside>
   );
 }

@@ -3,7 +3,7 @@ import test from "node:test";
 import { LIGHT_INTRO_TH, unknownLightReply } from "./light-help.ts";
 
 test("welcome introduces the assistant and shows actionable examples", () => {
-  assert.match(LIGHT_INTRO_TH, /ผม Luma/);
+  assert.match(LIGHT_INTRO_TH, /ผม Lumen Home/);
   assert.match(LIGHT_INTRO_TH, /กดปุ่มไมโครโฟน/);
   for (const example of ["เปิดไฟ", "ตั้งความสว่าง 50%", "กระพริบไฟช้า", "หยุดกระพริบไฟ", "ไฟสว่างกี่เปอร์เซ็นต์"]) {
     assert.ok(LIGHT_INTRO_TH.includes(example), example);

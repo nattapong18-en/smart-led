@@ -1,17 +1,17 @@
-.site-nav { max-width: 1512px; margin: auto; padding: 14px clamp(20px, 4.5vw, 76px); display: flex; gap: 22px; align-items: center; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+.site-nav { max-width: 1440px; margin: auto; padding: 14px clamp(16px, 4vw, 64px); display: flex; gap: 22px; align-items: center; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; }
 .site-nav a[aria-current="page"] { color: var(--accent); }
 .site-nav a:hover, .site-nav button:hover { color: var(--text); }
 .site-nav button { margin-left: auto; border: 0; color: var(--muted); background: transparent; }
-.connect-page { min-height: calc(100vh - 50px); display: grid; place-items: center; padding: 30px 20px; }
-.connect-card { width: min(100%, 500px); padding: clamp(24px, 5vw, 42px); border: 1px solid var(--border); border-radius: 20px; background: var(--surface); }
+.connect-page { min-height: calc(100vh - 50px); display: grid; place-items: center; padding: 30px 16px; background: radial-gradient(ellipse 60% 50% at 50% 20%, rgba(255,183,77,.16), transparent 70%); }
+.connect-card { width: min(100%, 500px); padding: clamp(24px, 5vw, 42px); border: 1px solid var(--border); border-radius: 24px; background: linear-gradient(180deg, var(--surface-2), var(--surface)); box-shadow: 0 30px 80px -40px rgba(245,176,65,.35); }
 .connect-card h1 { margin: 9px 0 8px; font-size: 29px; letter-spacing: -.04em; }
 .connect-card > p { color: var(--muted); }
 .connect-card form { display: grid; gap: 15px; margin-top: 28px; }
-.connect-card label { display: grid; gap: 7px; color: #ddd9e8; font-weight: 600; }
-.connect-card input { width: 100%; padding: 11px 13px; border: 1px solid #45404f; border-radius: 9px; color: var(--text); background: #1c1b23; }
-.connect-card form button { margin-top: 5px; padding: 12px; border: 0; border-radius: 9px; color: #1c1530; background: var(--accent); font-weight: 700; }
+.connect-card label { display: grid; gap: 7px; color: #e6d7c3; font-weight: 600; }
+.connect-card input { width: 100%; padding: 11px 13px; border: 1px solid var(--border-strong); border-radius: 12px; color: var(--text); background: var(--background); }
+.connect-card form button { margin-top: 5px; padding: 12px; border: 0; border-radius: 99px; color: var(--accent-ink); background: var(--accent); font-weight: 700; }
 .connect-card .connect-note { margin-top: 20px; font-size: 11px; }
-.connect-error { color: #fda4af; }
+.connect-error { color: var(--danger); }
 .guide-page { max-width: 1120px; min-height: 100vh; margin: auto; padding: 0 clamp(20px, 4.5vw, 76px) 60px; }
 .guide-page .site-nav { padding-left: 0; padding-right: 0; }
 .guide-hero { padding: 54px 0 28px; }
@@ -19,9 +19,9 @@
 .guide-hero > p:last-child { max-width: 670px; color: var(--muted); }
 .guide-card { margin: 18px 0; padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
 .guide-card h2 { margin-bottom: 15px; font-size: 18px; }
-.guide-card p { margin-top: 10px; color: #bab8c3; overflow-wrap: anywhere; }
-.guide-card code, .guide-card pre { color: #d0bafa; }
-.guide-card pre { padding: 18px; overflow: auto; border-radius: 10px; background: #19171f; font-size: 12px; line-height: 1.7; }
+.guide-card p { margin-top: 10px; color: #cdbfab; overflow-wrap: anywhere; }
+.guide-card code, .guide-card pre { color: var(--accent-soft); }
+.guide-card pre { padding: 18px; overflow: auto; border-radius: 10px; background: var(--background); font-size: 12px; line-height: 1.7; }
 .endpoint-list { display: grid; gap: 8px; }
 .endpoint { display: grid; grid-template-columns: 125px 140px 1fr; gap: 14px; align-items: center; padding: 10px; border-bottom: 1px solid var(--border); }
 .endpoint span { color: var(--accent); font-size: 11px; font-weight: 700; }

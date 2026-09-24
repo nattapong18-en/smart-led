@@ -18,8 +18,8 @@ const endpoints = [
 
 function ApiGuide() {
   return <main className="guide-page">
-    <nav className="site-nav" aria-label="เว็บไซต์ Luma"><a href="/">← หน้าควบคุมไฟ</a><a href="/api/" aria-current="page">คู่มือ API</a></nav>
-    <div className="guide-hero"><p className="eyebrow">LUMA · DEVELOPER API</p><h1>ออกแบบหน้าเว็บของคุณเอง</h1><p>ทำเฉพาะ frontend แล้วเรียก API สำเร็จรูปของ Luma เพื่อสั่งไฟ LED ผ่าน ESP32 ได้เลย ไม่ต้องสร้าง AI หรือ backend ใหม่</p></div>
+    <nav className="site-nav" aria-label="เว็บไซต์ Lumen Home"><a href="/">← หน้าควบคุมไฟ</a><a href="/api/" aria-current="page">คู่มือ API</a></nav>
+    <div className="guide-hero"><p className="eyebrow">LUMEN HOME · DEVELOPER API</p><h1>ออกแบบหน้าเว็บของคุณเอง</h1><p>ทำเฉพาะ frontend แล้วเรียก API สำเร็จรูปของ Lumen Home เพื่อสั่งไฟ LED ผ่าน ESP32 ได้เลย ไม่ต้องสร้าง AI หรือ backend ใหม่</p></div>
     <section className="guide-card"><h2>เริ่มต้น</h2><p>Base URL: <code>{baseUrl}</code></p><p>ทุก request ต้องส่ง <code>Authorization: Bearer &lt;API_KEY&gt;</code> โดยรับคีย์จากเจ้าของโปรเจกต์เป็นการส่วนตัว ห้ามใส่คีย์ไว้ใน source code หรือ GitHub</p><p>สร้าง <code>X-Luma-Session</code> เป็น UUID ใหม่ทุกครั้งที่เปิดหน้า เพื่อเริ่มประวัติแชตใหม่ หากใช้ preset ให้ส่ง <code>X-Luma-Owner</code> เป็น UUID ที่เก็บไว้ในเบราว์เซอร์</p></section>
     <section className="guide-card"><h2>Endpoints</h2><div className="endpoint-list">{endpoints.map(([method, path, description]) => <div className="endpoint" key={path}><span>{method}</span><code>{path}</code><p>{description}</p></div>)}</div></section>
     <section className="guide-card"><h2>Request bodies และผลตอบกลับ</h2>
@@ -32,7 +32,7 @@ function ApiGuide() {
       <p>ข้อผิดพลาดใช้ HTTP status จริง เช่น 400 ข้อมูลผิด, 401 คีย์ผิด, 403 origin ไม่อนุญาต, 502 ติดต่อ ESP32 ไม่ได้ ดู <a href="https://github.com/nattapong18-en/smart-led/blob/main/web/FRIEND_API.md" target="_blank" rel="noopener noreferrer">สัญญา API ฉบับเต็มใน GitHub ↗</a></p>
     </section>
     <section className="guide-card"><h2>ตัวอย่างเรียก API</h2><pre>{`const api = "${baseUrl}";
-const key = prompt("Luma API key"); // Ask at runtime
+const key = prompt("Lumen Home API key"); // Ask at runtime
 const session = crypto.randomUUID(); // Reuse until this page closes
 const response = await fetch(api + "/chat", {
   method: "POST",
@@ -45,7 +45,7 @@ const response = await fetch(api + "/chat", {
 });
 if (!response.ok) throw new Error("Command failed");
 console.log(await response.json());`}</pre><p>ตั้งค่า CORS บน backend ให้ตรงกับ origin ของเว็บคุณก่อน มิฉะนั้นเบราว์เซอร์จะบล็อก request อย่า retry คำสั่ง POST อัตโนมัติหลัง timeout เพราะบอร์ดอาจทำคำสั่งไปแล้ว</p></section>
-    <section className="guide-card"><h2>Prompt สำหรับ AI สร้างหน้าเว็บ</h2><p>“สร้าง frontend ควบคุม LED ด้วย Luma API ที่มีอยู่แล้ว รองรับสถานะไฟ เปิด/ปิด ปรับความสว่าง กระพริบ แชตไทย/อังกฤษ พูดสั่งงาน และเสียงตอบกลับ ถาม API URL กับ key จากผู้ใช้ตอนเปิดเว็บ ไม่สร้าง backend ใหม่ ไม่ฝังคีย์ลง source จัดการ error/offline และไม่แสดงว่าไฟเปลี่ยนจน API ตอบสำเร็จ”</p></section>
+    <section className="guide-card"><h2>Prompt สำหรับ AI สร้างหน้าเว็บ</h2><p>“สร้าง frontend ควบคุม LED ด้วย Lumen Home API ที่มีอยู่แล้ว รองรับสถานะไฟ เปิด/ปิด ปรับความสว่าง กระพริบ แชตไทย/อังกฤษ พูดสั่งงาน และเสียงตอบกลับ ถาม API URL กับ key จากผู้ใช้ตอนเปิดเว็บ ไม่สร้าง backend ใหม่ ไม่ฝังคีย์ลง source จัดการ error/offline และไม่แสดงว่าไฟเปลี่ยนจน API ตอบสำเร็จ”</p></section>
   </main>;
 }
 

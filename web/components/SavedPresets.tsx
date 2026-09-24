@@ -26,15 +26,14 @@ export default function SavedPresets({ status, blinkBrightness, blinkOnMs, blink
     } catch(error) {setFeedback(error instanceof Error ? error.message : 'ทำรายการไม่สำเร็จ');}
     finally {setBusy(false);}
   }
-  return <section className="card preset-card" aria-labelledby="saved-heading">
-    <h2 id="saved-heading">โหมดไฟที่บันทึกไว้</h2>
-    <p className="muted">ตั้งชื่อค่าที่ชอบ แล้วเรียกใช้ได้แม้รีสตาร์ตเว็บ</p>
+  return <div className="preset-card">
+    <div className="panel-intro"><p>ตั้งชื่อค่าที่ชอบ แล้วเรียกใช้ได้แม้รีสตาร์ตเว็บ</p></div>
     <div className="preset-fields">
       <label>ชื่อโหมด<input value={name} maxLength={40} onChange={e=>setName(e.target.value)} placeholder="เช่น อ่านหนังสือ" /></label>
       <label>รูปแบบ<select value={mode} onChange={e=>setMode(e.target.value as 'steady'|'blink')}><option value="steady">ไฟติดค้าง</option><option value="blink">ไฟกระพริบ</option></select></label>
     </div>
     <button disabled={busy || !name.trim() || !status} onClick={()=>void request('POST',{ name:name.trim(),mode,brightness:mode==='steady' ? (status!.blinking ? status!.blinkBrightness : status!.brightness) : blinkBrightness,onMs:blinkOnMs,offMs:blinkOffMs,count:blinkCount })}>บันทึกค่าปัจจุบัน</button>
-    <div className="saved-list">{items.map(p=><div key={p.id} className="saved-row"><span><strong>{p.name}</strong><small>{p.mode==='blink' ? `กระพริบ ${p.brightness}% · ${p.onMs}/${p.offMs} ms · ${p.count || 'ต่อเนื่อง'}` : `ติดค้าง ${p.brightness}%`}</small></span><button disabled={busy} onClick={()=>void request('POST',{action:'apply',id:p.id})}>ใช้</button><button disabled={busy} onClick={()=>void request('DELETE',undefined,p.id)} aria-label={`ลบโหมด ${p.name}`}>ลบ</button></div>)}</div>
+    <div className="saved-list">{items.length === 0 && <p className="muted empty-note">ยังไม่มีโหมดที่บันทึก</p>}{items.map(p=><div key={p.id} className="saved-row"><span><strong>{p.name}</strong><small>{p.mode==='blink' ? `กระพริบ ${p.brightness}% · ${p.onMs}/${p.offMs} ms · ${p.count || 'ต่อเนื่อง'}` : `ติดค้าง ${p.brightness}%`}</small></span><button disabled={busy} onClick={()=>void request('POST',{action:'apply',id:p.id})}>ใช้</button><button disabled={busy} onClick={()=>void request('DELETE',undefined,p.id)} aria-label={`ลบโหมด ${p.name}`}>ลบ</button></div>)}</div>
     {feedback && <p className="muted" role="status">{feedback}</p>}
-  </section>;
+  </div>;
 }
