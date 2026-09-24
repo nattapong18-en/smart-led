@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { browserApiFetch } from "./browser-api";
+import { browserApiFetch, externalApiConfigured } from "./browser-api";
+
+const VOICE_PACK = "f2-v1";
 
 export function useReplySpeech() {
   const [supported, setSupported] = useState(false);
@@ -9,6 +11,7 @@ export function useReplySpeech() {
   const [speaking, setSpeaking] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [source, setSource] = useState<"static" | "server" | "browser" | null>(null);
   const enabledRef = useRef(true);
   const audio = useRef<HTMLAudioElement | null>(null);
   const utterance = useRef<SpeechSynthesisUtterance | null>(null);
@@ -60,11 +63,84 @@ export function useReplySpeech() {
     return () => stop();
   }, []);
 
-  async function speakThai(text: string): Promise<boolean> {
-    const ticket = generation.current;
+  async function playClip(blob: Blob, ticket: number, clipSource: "static" | "server"): Promise<boolean> {
+    if (ticket !== generation.current) return false;
+    const url = URL.createObjectURL(blob);
+    objectUrl.current = url;
+    let current: HTMLAudioElement;
+    try {
+      current = new Audio(url);
+    } catch {
+      URL.revokeObjectURL(url);
+      objectUrl.current = null;
+      return false;
+    }
+    audio.current = current;
+    const release = () => {
+      current.onplay = null;
+      current.onended = null;
+      current.onerror = null;
+      current.pause();
+      current.removeAttribute("src");
+      current.load();
+      if (audio.current === current) audio.current = null;
+      if (objectUrl.current === url) {
+        URL.revokeObjectURL(url);
+        objectUrl.current = null;
+      }
+      setSource(null);
+      setSpeaking(false);
+    };
+    return await new Promise<boolean>((resolve) => {
+      finish.current = resolve;
+      current.onplay = () => { setSource(clipSource); setLoading(false); setSpeaking(true); };
+      current.onended = () => { finish.current = null; stop(); resolve(true); };
+      current.onerror = () => { finish.current = null; release(); resolve(false); };
+      try {
+        void current.play().catch(() => {
+          if (ticket !== generation.current) { resolve(false); return; }
+          finish.current = null;
+          release();
+          resolve(false);
+        });
+      } catch {
+        finish.current = null;
+        release();
+        resolve(false);
+      }
+    });
+  }
+
+  async function staticThaiClip(text: string): Promise<Blob | null> {
+    if (!externalApiConfigured() || !window.crypto?.subtle) return null;
+    let digest: string;
+    try {
+      const hash = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      digest = Array.from(new Uint8Array(hash), value => value.toString(16).padStart(2, "0")).join("");
+    } catch {
+      return null;
+    }
     const controller = new AbortController();
     pending.current = controller;
-    setLoading(true);
+    const timeout = setTimeout(() => controller.abort(), 6_000);
+    try {
+      const response = await fetch(`/voice/${VOICE_PACK}/${digest}.mp3`, { cache: "force-cache", signal: controller.signal });
+      if (!response.ok || !response.headers.get("content-type")?.startsWith("audio/")) return null;
+      const blob = await response.blob();
+      return blob.size >= 512 ? blob : null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+      if (pending.current === controller) pending.current = null;
+    }
+  }
+
+  async function serverThaiClip(text: string): Promise<Blob | null> {
+    const controller = new AbortController();
+    pending.current = controller;
+    // Render Free may be asleep; keep the UI responsive while it wakes up.
+    const timeout = setTimeout(() => controller.abort(), 15_000);
     try {
       const response = await browserApiFetch("/api/speech", {
         method: "POST",
@@ -72,42 +148,36 @@ export function useReplySpeech() {
         body: JSON.stringify({ text }),
         signal: controller.signal,
       });
-      if (!response.ok) {
-        const failure = await response.json().catch(() => null) as { code?: string } | null;
-        if (response.status === 503 && failure?.code === "tts_cache_miss") {
-          if (ticket !== generation.current) return false;
-          setLoading(false);
-          return await speakBrowser(text, "th-TH");
-        }
-        throw new Error("local TTS unavailable");
-      }
+      if (!response.ok || !response.headers.get("content-type")?.startsWith("audio/")) return null;
       const blob = await response.blob();
-      if (ticket !== generation.current) return false;
-      if (!response.headers.get("content-type")?.startsWith("audio/") || blob.size < 44) throw new Error("invalid audio");
-      const url = URL.createObjectURL(blob);
-      objectUrl.current = url;
-      const current = new Audio(url);
-      audio.current = current;
-
-      return await new Promise<boolean>((resolve) => {
-        finish.current = resolve;
-        current.onplay = () => { setLoading(false); setSpeaking(true); };
-        current.onended = () => { finish.current = null; stop(); resolve(true); };
-        current.onerror = () => { finish.current = null; stop(); setError("เล่นเสียงไทยไม่สำเร็จ"); resolve(false); };
-        current.play().catch(() => {
-          if (ticket !== generation.current) { resolve(false); return; }
-          finish.current = null;
-          stop();
-          setError("เบราว์เซอร์บล็อกเสียง กรุณากดฟังอีกครั้ง");
-          resolve(false);
-        });
-      });
+      return blob.size >= 44 ? blob : null;
     } catch {
-      if (controller.signal.aborted || ticket !== generation.current) return false;
-      setLoading(false);
-      setError("สร้างเสียงไทยไม่สำเร็จ");
-      return false;
+      return null;
+    } finally {
+      clearTimeout(timeout);
+      if (pending.current === controller) pending.current = null;
     }
+  }
+
+  async function speakThai(text: string): Promise<boolean> {
+    const ticket = generation.current;
+    setLoading(true);
+    try {
+      const staticClip = await staticThaiClip(text);
+      if (ticket !== generation.current) return false;
+      if (staticClip && await playClip(staticClip, ticket, "static")) return true;
+      if (ticket !== generation.current) return false;
+
+      setLoading(true);
+      const serverClip = await serverThaiClip(text);
+      if (ticket !== generation.current) return false;
+      if (serverClip && await playClip(serverClip, ticket, "server")) return true;
+      if (ticket !== generation.current) return false;
+    } catch {
+      if (ticket !== generation.current) return false;
+    }
+    setLoading(false);
+    return await speakBrowser(text, "th-TH");
   }
 
   async function speakBrowser(text: string, language: "th-TH" | "en-US"): Promise<boolean> {
@@ -116,16 +186,16 @@ export function useReplySpeech() {
       return false;
     }
     return await new Promise<boolean>((resolve) => {
-      const current = new SpeechSynthesisUtterance(text);
-      current.lang = language;
-      current.rate = 1;
-      current.voice = window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith(language.slice(0, 2))) ?? null;
-      utterance.current = current;
-      finish.current = resolve;
-      current.onstart = () => { setLoading(false); setSpeaking(true); };
-      current.onend = () => { finish.current = null; stop(); resolve(true); };
-      current.onerror = () => { finish.current = null; stop(); setError(language === "th-TH" ? "เบราว์เซอร์เล่นเสียงไทยสำรองไม่สำเร็จ" : "เบราว์เซอร์เล่นเสียงอังกฤษไม่สำเร็จ"); resolve(false); };
       try {
+        const current = new SpeechSynthesisUtterance(text);
+        current.lang = language;
+        current.rate = 1;
+        current.voice = window.speechSynthesis.getVoices().find(voice => voice.lang.toLowerCase().startsWith(language.slice(0, 2))) ?? null;
+        utterance.current = current;
+        finish.current = resolve;
+        current.onstart = () => { setSource("browser"); setLoading(false); setSpeaking(true); };
+        current.onend = () => { finish.current = null; stop(); resolve(true); };
+        current.onerror = () => { finish.current = null; stop(); setError(language === "th-TH" ? "เบราว์เซอร์เล่นเสียงไทยสำรองไม่สำเร็จ" : "เบราว์เซอร์เล่นเสียงอังกฤษไม่สำเร็จ"); resolve(false); };
         window.speechSynthesis.speak(current);
       } catch {
         finish.current = null;
@@ -141,6 +211,7 @@ export function useReplySpeech() {
     if (!text.trim()) return false;
     stop();
     setError("");
+    setSource(null);
     return /[฀-๿]/.test(text) ? speakThai(text) : speakBrowser(text, "en-US");
   }
 
@@ -151,5 +222,5 @@ export function useReplySpeech() {
     setError("");
   }
 
-  return { supported, enabled, speaking, loading, error, speak, stop, toggle, prepare };
+  return { supported, enabled, speaking, loading, error, source, speak, stop, toggle, prepare };
 }

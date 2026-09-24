@@ -6,7 +6,7 @@ import VoiceControl from "./VoiceControl";
 import { useReplySpeech } from "../lib/speech";
 import { LIGHT_INTRO_TH } from "../lib/light-help";
 import { browserApiFetch } from "../lib/browser-api";
-import { shouldSpeakReply } from "../lib/reply-speech";
+import { speechTextForReply } from "../lib/reply-speech";
 import { ArrowUp, AudioLines, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -65,13 +65,13 @@ export default function ChatControl({ onCommand, onHistoryReady }: ChatControlPr
     try {
       const reply = await onCommand(text);
       setMessages((previous) => [...previous, { role: "ระบบ", text: reply }]);
-      const speakable = shouldSpeakReply(reply);
-      setLastReply(speakable ? reply : "");
+      const spoken = speechTextForReply(reply);
+      setLastReply(spoken ?? "");
       if (signal?.aborted) return false;
-      if (!speakable) return true;
+      if (!spoken) return true;
       // A TTS failure must not cancel an otherwise successful voice command
       // or permanently stop the continuous microphone loop.
-      await speech.speak(reply);
+      await speech.speak(spoken);
       return true;
     } catch {
       setMessages((previous) => [...previous, {
@@ -99,7 +99,8 @@ export default function ChatControl({ onCommand, onHistoryReady }: ChatControlPr
           <Button type="button" variant="ghost" size="icon" className="composer-tool" disabled={!speech.supported} aria-label={speech.enabled ? 'ปิดเสียงตอบกลับ' : 'เปิดเสียงตอบกลับ'} aria-pressed={speech.enabled} onClick={speech.toggle}>{speech.enabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</Button>
           <Button className="send-button" size="icon" type="submit" disabled={busy || voiceActive || !historyReady || !input.trim()} aria-label={busy ? "กำลังส่งข้อความ" : "ส่งข้อความถึง AI"}>{busy ? "…" : <ArrowUp size={19} />}</Button></div>
         <div className="reply-audio" aria-label="เสียงตอบกลับ AI">
-          <span className="muted" role="status">{!speech.supported ? "เบราว์เซอร์นี้ไม่รองรับเสียงอ่าน" : speech.loading ? "กำลังสร้างเสียงไทย…" : speech.speaking ? "ผู้ช่วยกำลังพูด…" : "เสียงตอบกลับพร้อมใช้งาน"}</span>
+          <span className="muted" role="status">{!speech.supported ? "เบราว์เซอร์นี้ไม่รองรับเสียงอ่าน" : speech.loading ? "กำลังโหลดเสียงไทย…" : speech.speaking ? "ผู้ช่วยกำลังพูด…" : "เสียงตอบกลับพร้อมใช้งาน"}</span>
+          {speech.source && <span className="muted">{speech.source === "static" ? "เสียงผู้หญิงจากเว็บ" : speech.source === "server" ? "เสียงไทยจากเซิร์ฟเวอร์" : "เสียงสำรองจากเบราว์เซอร์"}</span>}
           {speech.speaking || speech.loading ? <Button type="button" variant="ghost" size="sm" onClick={speech.stop}>หยุดอ่าน</Button> : lastReply && <Button type="button" variant="ghost" size="sm" disabled={!speech.supported || !speech.enabled || busy || voiceActive} onClick={() => { void speech.prepare().then(() => speech.speak(lastReply)); }}>ฟังอีกครั้ง</Button>}
           {speech.error && <p role="alert">{speech.error}</p>}
         </div>

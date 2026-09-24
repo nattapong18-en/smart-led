@@ -36,3 +36,7 @@ tts/.venv/
 tts/.cache/
 tts/cache/
 tts/voices/
+__pycache__/
+
+# Temporary LAN page for comparing generated voice samples
+voice-preview/
